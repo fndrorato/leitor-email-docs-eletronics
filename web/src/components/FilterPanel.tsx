@@ -108,12 +108,12 @@ const handleApplyFilters = async () => {
 
 
       <div className="flex flex-col gap-1 w-[180px]">
-        <Label htmlFor="startDatePicker">Data de Início</Label>
+        <Label htmlFor="startDatePicker">Fecha Inicial</Label>
         <DatePicker id="startDatePicker" defaultDate={localStartDate ? new Date(localStartDate) : undefined} onChange={([date]) => setLocalStartDate(date ? format(date, 'yyyy-MM-dd') : '')} />
       </div>
 
       <div className="flex flex-col gap-1 w-[180px]">
-        <Label htmlFor="endDatePicker">Data de Fim</Label>
+        <Label htmlFor="endDatePicker">Fecha Final</Label>
         <DatePicker id="endDatePicker" defaultDate={localEndDate ? new Date(localEndDate) : undefined} onChange={([date]) => setLocalEndDate(date ? format(date, 'yyyy-MM-dd') : '')} />
       </div>
 
