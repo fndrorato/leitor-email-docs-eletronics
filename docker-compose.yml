@@ -1,0 +1,98 @@
+services:
+
+  db:
+    image: postgres:15
+    container_name: leitor-email-db
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5436:5432"
+    restart: always
+    env_file:
+      - .env
+
+  redis:
+    image: redis:7
+    container_name: leitor-email-redis
+    ports:
+      - "6381:6379"
+    restart: always
+    env_file:
+      - .env
+
+  backend:
+    build:
+      context: ./server
+    container_name: leitor-email-backend
+    volumes:
+      - ./server:/app
+    env_file:
+      - .env
+    ports:
+      - "4101:8000"
+    depends_on:
+      - db
+      - redis
+    restart: always
+    entrypoint: /entrypoint.sh
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+  celery:
+    build:
+      context: ./server
+    container_name: leitor-email-celery
+    command: celery -A app worker --loglevel=info
+    volumes:
+      - ./server:/app
+    env_file:
+      - .env
+    depends_on:
+      - backend
+      - redis
+    restart: always
+
+  beat:
+    build:
+      context: ./server
+    container_name: leitor-email-beat
+    command: celery -A app beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - ./server:/app
+    env_file:
+      - .env
+    depends_on:
+      - backend
+      - redis
+    restart: always
+
+  frontend:
+    build:
+      context: ./web
+    container_name: leitor-email-frontend
+    env_file:
+      - .env
+    ports:
+      - "4102:3000"
+    depends_on:
+      - backend
+    restart: always
+
+  pdf:
+    build:
+      context: ./gerador-pdf
+    container_name: leitor-email-gerador-pdf
+    env_file:
+      - .env
+    ports:
+      - "4103:3001"
+    depends_on:
+      - backend
+    restart: always
+
+
+volumes:
+  postgres_data:

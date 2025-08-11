@@ -1,0 +1,26 @@
+{
+  "name": "gerador-pdf",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "accounting": "^0.4.1",
+    "base64-img": "^1.0.4",
+    "body-parser": "^2.2.0",
+    "express": "^5.1.0",
+    "jspdf": "^2.5.1",
+    "jspdf-autotable": "^3.5.25",
+    "moment": "^2.30.1",
+    "qrcode": "^1.5.4",
+    "underscore": "^1.13.7",
+    "written-number": "^0.11.1",
+    "xml2js": "^0.6.2"
+  }
+}
