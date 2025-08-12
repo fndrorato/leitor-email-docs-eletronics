@@ -2,6 +2,8 @@ import os
 import requests
 import xmltodict
 import xml.etree.ElementTree as ET
+from decouple import config
+from dotenv import load_dotenv
 from datetime import datetime
 from django.utils.dateparse import parse_datetime
 from django.db.models import Q
@@ -21,7 +23,6 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_RIGHT, TA_CENTER, TA_LEFT
 from documentos.util import simplificar_dict
-
 
 
 class DocumentoListView(ListAPIView):
@@ -121,9 +122,8 @@ class FacturaPDFView(APIView):
         elif (documento.tipo_documento.code == 6):
             rota_api = 'notacredito' # porém é notadebito
         
-        print('Rota API:', rota_api)
-        
-        result = requests.post(f'http://localhost:3001/api/pdf/{rota_api}', json={
+        rota_gerador_pdf = config('ROUTE_PDF_GENERATOR', default='http://localhost:3001/api/pdf/')
+        result = requests.post(f'{rota_gerador_pdf}/api/pdf/{rota_api}', json={
             "xml": xml,
             "cod_empresa": 4,
             "nome_empresa": documento.emissor.nome,
