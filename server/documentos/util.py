@@ -7,6 +7,7 @@ import xml.etree.ElementTree as ET
 from babel.numbers import format_currency
 from common.models import Departamento, Cidade
 from datetime import datetime
+from decimal import Decimal
 from documentos.models import TipoDocumento, Documento
 from emissores.models import Emissor
 from io import BytesIO
@@ -26,53 +27,84 @@ def simplificar_dict(d):
         return [simplificar_dict(item) for item in d]
     return d
 
-
-
 def processar_nfe_xml(xml_str: str):
-    ns = {'ns': 'http://ekuatia.set.gov.py/sifen/xsd'}
+    NS = {'ns': 'http://ekuatia.set.gov.py/sifen/xsd'}
     root = ET.fromstring(xml_str)
 
-    # 1. Dados principais
-    de = root.find('ns:DE', ns)
-    gTimb = de.find('ns:gTimb', ns)
-    gDatGralOpe = de.find('ns:gDatGralOpe', ns)
-    gEmis = gDatGralOpe.find('ns:gEmis', ns)
+    # helper pra extrair texto com erro amigável
+    def get_text(node, path, required=True, default=None):
+        el = node.find(path, NS)
+        if el is None or el.text is None:
+            if required:
+                raise ValueError(f"Campo obrigatório não encontrado: {path}")
+            return default
+        return el.text.strip()
 
-    # Campos de apoio
+    # 1) Aponta para o nó DE em qualquer lugar (por causa do rLoteDE/rDE)
+    de = root.find('.//ns:DE', NS)
+    if de is None:
+        raise ValueError("Nó <DE> não encontrado (verifique namespace/caminho).")
+
+    # 2) Blocos principais (sempre RELATIVOS a 'de')
+    gTimb = de.find('ns:gTimb', NS)
+    if gTimb is None:
+        raise ValueError("Bloco <gTimb> não encontrado em <DE>.")
+
+    gDatGralOpe = de.find('ns:gDatGralOpe', NS)
+    if gDatGralOpe is None:
+        raise ValueError("Bloco <gDatGralOpe> não encontrado em <DE>.")
+
+    gEmis = gDatGralOpe.find('ns:gEmis', NS)
+    if gEmis is None:
+        raise ValueError("Bloco <gEmis> não encontrado em <gDatGralOpe>.")
+
+    # 3) Campos principais
     cdc = de.attrib.get("Id")
-    tipo_doc_code = int(gTimb.find('ns:iTiDE', ns).text)
-    tipo_doc_name = gTimb.find('ns:dDesTiDE', ns).text
-    est = gTimb.find('ns:dEst', ns).text
-    pun_exp = gTimb.find('ns:dPunExp', ns).text
-    num_doc = gTimb.find('ns:dNumDoc', ns).text
-    data_emissao = gDatGralOpe.find('ns:dFeEmiDE', ns).text
-    valor_total = root.find('ns:DE/ns:gTotSub/ns:dTotOpe', ns).text
-    valor_total = float(valor_total)
+    if not cdc:
+        raise ValueError("Atributo Id não encontrado em <DE>.")
 
-    # 2. Departamento
-    dep_code = gEmis.find('ns:cDepEmi', ns).text
-    dep_name = gEmis.find('ns:dDesDepEmi', ns).text
-    departamento, _ = Departamento.objects.get_or_create(code=dep_code, defaults={'name': dep_name})
+    tipo_doc_code = int(get_text(gTimb, 'ns:iTiDE'))
+    tipo_doc_name = get_text(gTimb, 'ns:dDesTiDE')
+    est = get_text(gTimb, 'ns:dEst')
+    pun_exp = get_text(gTimb, 'ns:dPunExp')
+    num_doc = get_text(gTimb, 'ns:dNumDoc')
 
-    # 3. Cidade
-    city_code = gEmis.find('ns:cCiuEmi', ns).text
-    city_name = gEmis.find('ns:dDesCiuEmi', ns).text
-    cidade, _ = Cidade.objects.get_or_create(code=city_code, defaults={'name': city_name, 'departamento': departamento})
+    data_emissao_str = get_text(gDatGralOpe, 'ns:dFeEmiDE')
+    fecha_emision = datetime.fromisoformat(data_emissao_str)
 
-    # 4. TipoDocumento
-    tipo_doc, _ = TipoDocumento.objects.get_or_create(code=tipo_doc_code, defaults={'name': tipo_doc_name})
+    # Totais (dentro de DE)
+    dTotOpe_txt = get_text(de, 'ns:gTotSub/ns:dTotOpe')
+    monto_total = Decimal(dTotOpe_txt)
 
-    # 5. Emissor
-    ruc = gEmis.find('ns:dRucEm', ns).text
-    nome = gEmis.find('ns:dNomEmi', ns).text
-    nome_fantasia = gEmis.find('ns:dNomFanEmi', ns).text if gEmis.find('ns:dNomFanEmi', ns) is not None else None
-    emissor, _ = Emissor.objects.get_or_create(code=ruc, defaults={
-        'nome': nome,
-        'nome_fantasia': nome_fantasia,
-        'cidade': cidade
-    })
+    # 4) Departamento e cidade do emissor
+    dep_code = get_text(gEmis, 'ns:cDepEmi')
+    dep_name = get_text(gEmis, 'ns:dDesDepEmi')
+    departamento, _ = Departamento.objects.get_or_create(
+        code=dep_code, defaults={'name': dep_name}
+    )
 
-    # 6. Documento
+    city_code = get_text(gEmis, 'ns:cCiuEmi')
+    city_name = get_text(gEmis, 'ns:dDesCiuEmi')
+    cidade, _ = Cidade.objects.get_or_create(
+        code=city_code, defaults={'name': city_name, 'departamento': departamento}
+    )
+
+    # 5) TipoDocumento
+    tipo_doc, _ = TipoDocumento.objects.get_or_create(
+        code=tipo_doc_code, defaults={'name': tipo_doc_name}
+    )
+
+    # 6) Emissor
+    ruc = get_text(gEmis, 'ns:dRucEm')
+    nome = get_text(gEmis, 'ns:dNomEmi')
+    nome_fantasia = get_text(gEmis, 'ns:dNomFanEmi', required=False, default=None)
+
+    emissor, _ = Emissor.objects.get_or_create(
+        code=ruc,
+        defaults={'nome': nome, 'nome_fantasia': nome_fantasia, 'cidade': cidade}
+    )
+
+    # 7) Documento
     documento, created = Documento.objects.get_or_create(
         cdc=cdc,
         defaults={
@@ -81,12 +113,11 @@ def processar_nfe_xml(xml_str: str):
             'pun_exp': pun_exp,
             'num_doc': num_doc,
             'emissor': emissor,
-            'fecha_emision': datetime.fromisoformat(data_emissao),
-            'monto_total': valor_total,
+            'fecha_emision': fecha_emision,
+            'monto_total': monto_total,
             'documento_xml': xml_str,
         }
     )
-
     return documento, created
 
 def numero_por_extenso(valor, moeda='guarani'):

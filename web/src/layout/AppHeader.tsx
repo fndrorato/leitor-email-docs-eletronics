@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { Link } from "react-router";
-import { useSidebar } from "../context/SidebarContext";
+// import { useSidebar } from "../context/SidebarContext";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import FilterPanel from "../components/FilterPanel";
 
@@ -9,19 +9,19 @@ import FilterPanel from "../components/FilterPanel";
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
 
-  const { toggleSidebar, toggleMobileSidebar } = useSidebar();
+  // const { toggleSidebar, toggleMobileSidebar } = useSidebar();
 
-  const handleToggle = () => {
-    if (window.innerWidth >= 1024) {
-      toggleSidebar();
-    } else {
-      toggleMobileSidebar();
-    }
-  };
+  // const handleToggle = () => {
+  //   if (window.innerWidth >= 1024) {
+  //     toggleSidebar();
+  //   } else {
+  //     toggleMobileSidebar();
+  //   }
+  // };
 
-  const toggleApplicationMenu = () => {
-    setApplicationMenuOpen(!isApplicationMenuOpen);
-  };
+  // const toggleApplicationMenu = () => {
+  //   setApplicationMenuOpen(!isApplicationMenuOpen);
+  // };
 
   const inputRef = useRef<HTMLInputElement>(null);
 

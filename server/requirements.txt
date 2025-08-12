@@ -3,6 +3,7 @@ asgiref==3.9.1
 babel==2.17.0
 billiard==4.2.1
 celery==5.5.3
+certifi==2025.8.3
 charset-normalizer==3.4.2
 click==8.2.1
 click-didyoumean==0.3.1
@@ -17,6 +18,7 @@ django-timezone-field==7.1
 djangorestframework==3.16.0
 docopt==0.6.2
 dotenv==0.9.9
+idna==3.10
 imap-tools==1.11.0
 kombu==5.5.4
 num2words==0.5.14
@@ -28,11 +30,15 @@ python-crontab==3.3.0
 python-dateutil==2.9.0.post0
 python-decouple==3.8
 python-dotenv==1.1.1
+pytz==2025.2
 qrcode==8.2
 redis==6.2.0
 reportlab==4.4.3
+requests==2.32.4
 six==1.17.0
 sqlparse==0.5.3
 tzdata==2025.2
+urllib3==2.5.0
 vine==5.1.0
 wcwidth==0.2.13
+xmltodict==0.14.2

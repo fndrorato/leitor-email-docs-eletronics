@@ -19,5 +19,15 @@ python manage.py migrate --noinput
 
 echo "Coletando arquivos estáticos..."
 python manage.py collectstatic --noinput
+if [ $? -ne 0 ]; then
+  echo "Erro no collectstatic. Encerrando."
+  exit 1
+fi
+
+if [ "$DJANGO_SUPERUSER_USERNAME" ] && [ "$DJANGO_SUPERUSER_PASSWORD" ]; then
+    python manage.py createsuperuser --noinput \
+      --username "$DJANGO_SUPERUSER_USERNAME" \
+      --email "$DJANGO_SUPERUSER_EMAIL" || true
+fi
 
 exec "$@"
