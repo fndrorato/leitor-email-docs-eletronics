@@ -112,8 +112,6 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 100
 }
 
-
-
 # Internationalization
 # https://docs.djangoproject.com/en/5.0/topics/i18n/
 
@@ -142,6 +140,8 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOWED_ORIGINS = [
+    "http://10.1.1.41:4101",  # se for servir frontend nessa porta
+    "http://10.1.1.41",       # se for pelo nginx:80    
     'http://localhost:8080', 
     'http://127.0.0.1', 
     'http://localhost',
