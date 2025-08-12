@@ -3,16 +3,19 @@ import locale
 import os
 import pytz
 import qrcode
+import traceback
 import xml.etree.ElementTree as ET
 from babel.numbers import format_currency
 from common.models import Departamento, Cidade
 from datetime import datetime
 from decimal import Decimal
 from documentos.models import TipoDocumento, Documento
+from emails.models import EmailXmlError, User as EmailAccount
 from emissores.models import Emissor
 from io import BytesIO
 from num2words import num2words
 from PIL import Image
+from typing import Optional
 
 
 # locale.setlocale(locale.LC_ALL, 'es_PY.UTF-8')
@@ -189,3 +192,56 @@ def formatar_data(data_str: str, formato_entrada='%Y-%m-%dT%H:%M:%S', formato_sa
         return data.strftime(formato_saida)
     except Exception:
         return data_str  # Retorna original se der erro
+
+def save_xml_error_simple(
+    *,
+    account: Optional[EmailAccount],
+    subject: str,
+    received_from: str,
+    received_at: Optional[datetime],
+    filename: str,
+    mime_type: Optional[str],
+    payload_bytes: Optional[bytes],
+    xml_text: Optional[str],
+    err: Exception,
+    size_bytes: Optional[int] = None,
+) -> None:
+    decoded_ok = xml_text is not None
+    xml_b64 = None
+    if payload_bytes and not decoded_ok:
+        try:
+            xml_b64 = base64.b64encode(payload_bytes).decode("ascii")
+        except Exception:
+            xml_b64 = None
+
+    EmailXmlError.objects.create(
+        account=account,
+        subject=subject,
+        received_from=received_from,
+        received_at=received_at,
+        filename=filename or "",
+        mime_type=mime_type or "",
+        size_bytes=size_bytes,
+        decoded_ok=decoded_ok,
+        xml_text=xml_text if decoded_ok else None,
+        xml_base64=xml_b64,
+        error_message=str(err),
+        stacktrace=traceback.format_exc(),
+    )
+
+def parse_email_date(date_str):
+    """
+    Tenta converter a string de data do e-mail em datetime.
+    Retorna None se não conseguir.
+    """
+    if not date_str:
+        return None
+    try:
+        # formato comum em e-mails: 'Mon, 12 Aug 2025 14:23:45 -0300'
+        return datetime.strptime(date_str[:31], "%a, %d %b %Y %H:%M:%S %z")
+    except Exception:
+        try:
+            # formato sem dia da semana: '12 Aug 2025 14:23:45 -0300'
+            return datetime.strptime(date_str[:30], "%d %b %Y %H:%M:%S %z")
+        except Exception:
+            return None

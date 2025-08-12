@@ -2,22 +2,28 @@ import email
 import imaplib
 import os
 from datetime import datetime, timedelta
-from documentos.util import processar_nfe_xml
+from documentos.util import processar_nfe_xml, save_xml_error_simple, parse_email_date
 from email import policy
 from emails.models import User
 
 
 def ler_emails_com_anexos(max_emails=100):
-    # Janela de datas: últimos 5 dias (inclui ontem), exclui hoje
+    """
+    Lê e-mails da caixa INBOX de todos os Users ativos, no intervalo dos últimos 5 dias
+    (exclui hoje), processa anexos .xml e, em caso de erro no processamento de algum
+    XML, salva o XML bruto em disco e registra no modelo EmailXmlError via helper
+    save_xml_error_simple(...).
+    """
+    # Janela: últimos 5 dias, exclui hoje
     hoje = datetime.now()
-    inicio = (hoje - timedelta(days=5)).strftime("%d-%b-%Y")   # SINCE
-    antes = hoje.strftime("%d-%b-%Y")                          # BEFORE (exclui hoje)
+    inicio = (hoje - timedelta(days=5)).strftime("%d-%b-%Y")  # SINCE
+    antes  = hoje.strftime("%d-%b-%Y")                        # BEFORE (exclui hoje)
 
     users = User.objects.filter(active=True)
 
     for user in users:
         host = user.host
-        port = int(user.port or 993)
+        port = int(user.port or 993)  # seu port é CharField
         username = user.username
         password = user.password
 
@@ -25,10 +31,9 @@ def ler_emails_com_anexos(max_emails=100):
             print(f"📥 Conectando com {username} em {host}:{port}")
             mail = imaplib.IMAP4_SSL(host, port)
             mail.login(username, password)
-            mail.select("inbox")  # padrão: READ-WRITE
+            mail.select("inbox")  # READ-WRITE
 
-            # Todos os e-mails no intervalo (sem filtrar por SEEN/UNSEEN)
-            # Ex.: (SINCE "07-Aug-2025" BEFORE "12-Aug-2025")
+            # Busca todos os e-mails no período
             search_query = f'(SINCE "{inicio}" BEFORE "{antes}")'
             status, data = mail.search(None, search_query)
             if status != "OK":
@@ -42,22 +47,25 @@ def ler_emails_com_anexos(max_emails=100):
             emails_processados = 0
             emails_apagados = 0
 
-            for idx, num in enumerate(ids[:max_emails]):
-                # Para cada e-mail, vamos processar TODOS os XMLs anexos
-                # Só apagamos se TUDO der certo
+            for num in ids[:max_emails]:
                 tudo_ok = True
                 encontrou_xml = False
 
                 try:
-                    status, data = mail.fetch(num, "(RFC822)")
+                    status, fetch_data = mail.fetch(num, "(RFC822)")
                     if status != "OK":
                         print(f"⚠️  Falha ao buscar e-mail id {num.decode()}: {status}")
                         tudo_ok = False
                         continue
 
-                    raw_email = data[0][1]
+                    raw_email = fetch_data[0][1]
                     msg = email.message_from_bytes(raw_email, policy=policy.default)
+
                     assunto = msg.get('subject', '(sem assunto)')
+                    remetente = msg.get('from', '')
+                    # tentar normalizar a data do header Date
+                    date_hdr = msg.get('Date')
+                    received_at = parse_email_date(date_hdr)
 
                     for part in msg.iter_attachments():
                         filename = part.get_filename()
@@ -66,11 +74,20 @@ def ler_emails_com_anexos(max_emails=100):
 
                         if filename.lower().endswith(".xml"):
                             encontrou_xml = True
-                            try:
-                                payload = part.get_payload(decode=True)
-                                xml_content = payload.decode("utf-8", errors="replace")
+                            mime_type = part.get_content_type()  # ex.: application/xml
+                            payload_bytes = None
+                            size_bytes = None
 
+                            try:
+                                payload_bytes = part.get_payload(decode=True) or b""
+                                size_bytes = len(payload_bytes) if payload_bytes else 0
+
+                                # Decodifica como UTF-8 com replace (não quebra por caracteres inválidos)
+                                xml_content = payload_bytes.decode("utf-8", errors="replace")
+
+                                # Validação mínima para DE
                                 if "<DE Id=" in xml_content:
+                                    # -> Chame seu parser/gravador aqui
                                     doc, created = processar_nfe_xml(xml_content)
                                     if created:
                                         print(f"✅ [{username}] {assunto} -> Documento {doc.cdc} criado com sucesso.")
@@ -78,34 +95,46 @@ def ler_emails_com_anexos(max_emails=100):
                                         print(f"⚠️ [{username}] {assunto} -> Documento {doc.cdc} já existia.")
                                 else:
                                     print(f"⏩ {filename} ignorado: não é um DE válido.")
-                                    # opcionalmente, isso poderia NÃO invalidar o e-mail inteiro.
-                                    # aqui consideramos como 'processado' porém sem erro.
+
                             except Exception as e:
                                 tudo_ok = False
                                 print(f"\n❌ Erro ao processar '{filename}' do e-mail: {assunto}")
                                 print(f"➡️  Erro: {e}")
 
-                                os.makedirs("xmls_erros", exist_ok=True)
+                                # 1) Salva o XML bruto em disco (bytes) para análise
                                 try:
-                                    with open(f"xmls_erros/{filename}", "w", encoding="utf-8") as f:
-                                        # se xml_content não existir por falha de decode:
-                                        try:
-                                            f.write(xml_content)
-                                        except Exception:
-                                            f.write("(Falha ao obter conteúdo do XML para salvar)")
+                                    os.makedirs("xmls_erros", exist_ok=True)
+                                    with open(os.path.join("xmls_erros", filename), "wb") as f:
+                                        if payload_bytes:
+                                            f.write(payload_bytes)
                                     print(f"📝 XML com erro salvo: xmls_erros/{filename}")
                                 except Exception as file_error:
                                     print(f"⚠️ Falha ao salvar XML com erro: {file_error}")
 
+                                # 2) Registra no banco via helper simples
+                                try:
+                                    save_xml_error_simple(
+                                        account=user,
+                                        subject=assunto,
+                                        received_from=remetente,
+                                        received_at=received_at,
+                                        filename=filename,
+                                        mime_type=mime_type,
+                                        payload_bytes=payload_bytes,
+                                        xml_text=None,   # falhou decodificação/parse -> None
+                                        err=e,
+                                        size_bytes=size_bytes,
+                                    )
+                                except Exception as db_error:
+                                    print(f"⚠️ Falha ao registrar erro no banco: {db_error}")
+
                     # Se não encontrou nenhum XML, não apaga — apenas informa e segue
                     if not encontrou_xml:
                         print(f"📎 [{username}] E-mail '{assunto}' sem anexos XML. Ignorado.")
-                        tudo_ok = False  # não vamos apagar
+                        tudo_ok = False  # não apagar
 
                     # Decisão de apagar: somente se tudo_ok e houve XML
                     if tudo_ok and encontrou_xml:
-                        # Se quiser apagar quando ao menos UM XML deu certo,
-                        # troque a condição por: if encontrou_xml:
                         mail.store(num, '+FLAGS', '\\Deleted')
                         emails_apagados += 1
 
@@ -118,7 +147,7 @@ def ler_emails_com_anexos(max_emails=100):
             if emails_apagados > 0:
                 mail.expunge()
 
-            mail.close()  # fecha a caixa
+            mail.close()
             mail.logout()
             print(f"📊 [{username}] Processados {emails_processados} e-mails; apagados {emails_apagados}.")
 
