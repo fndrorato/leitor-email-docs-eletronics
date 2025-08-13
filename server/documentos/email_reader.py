@@ -18,6 +18,7 @@ def ler_emails_com_anexos(max_emails=100):
     hoje = datetime.now()
     inicio = (hoje - timedelta(days=5)).strftime("%d-%b-%Y")  # SINCE
     antes  = hoje.strftime("%d-%b-%Y")                        # BEFORE (exclui hoje)
+    amanha = (hoje + timedelta(days=1)).strftime("%d-%b-%Y")
 
     users = User.objects.filter(active=True)
 
@@ -34,7 +35,7 @@ def ler_emails_com_anexos(max_emails=100):
             mail.select("inbox")  # READ-WRITE
 
             # Busca todos os e-mails no período
-            search_query = f'(SINCE "{inicio}" BEFORE "{antes}")'
+            search_query = f'(SINCE "{inicio}" BEFORE "{amanha}")'
             status, data = mail.search(None, search_query)
             if status != "OK":
                 print(f"⚠️  [{username}] Falha na busca: {status}")
@@ -42,7 +43,7 @@ def ler_emails_com_anexos(max_emails=100):
                 continue
 
             ids = data[0].split()
-            print(f"🔍 [{username}] Encontrados {len(ids)} e-mails no período {inicio} .. {antes} (exclui hoje).")
+            print(f"🔍 [{username}] Encontrados {len(ids)} e-mails no período {inicio} .. {amanha} (inclui o hoje).")
 
             emails_processados = 0
             emails_apagados = 0
