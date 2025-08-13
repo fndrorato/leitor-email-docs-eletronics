@@ -7,7 +7,7 @@ from email import policy
 from emails.models import User
 
 
-def ler_emails_com_anexos(max_emails=100):
+def ler_emails_com_anexos(max_emails=200):
     """
     Lê e-mails da caixa INBOX de todos os Users ativos, no intervalo dos últimos 5 dias
     (exclui hoje), processa anexos .xml e, em caso de erro no processamento de algum
