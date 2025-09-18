@@ -7,8 +7,8 @@ class UserAdmin(admin.ModelAdmin):
     """
     Admin interface for managing users.
     """
-    list_display = ('username', 'host', 'port')
-    search_fields = ('username', 'host')
+    list_display = ('username', 'company__name', 'host', 'port')
+    search_fields = ('username', 'company__name', 'host')
     ordering = ('username',)
 
 @admin.register(EmailXmlError)

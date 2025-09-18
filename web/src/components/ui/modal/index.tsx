@@ -50,7 +50,7 @@ export const Modal: React.FC<ModalProps> = ({
   if (!isOpen) return null;
 
   const contentClasses = isFullscreen
-    ? "w-full h-full"
+    ? "w-full h-full bg-white dark:bg-gray-900"
     : "relative max-w-lg rounded-3xl bg-white  dark:bg-gray-900";
 
   return (

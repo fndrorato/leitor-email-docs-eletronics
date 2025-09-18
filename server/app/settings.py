@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 from decouple import config
 from dotenv import load_dotenv
 from celery.schedules import crontab
@@ -29,11 +30,14 @@ INSTALLED_APPS = [
     'django_celery_beat',
     'rest_framework',
     'corsheaders',
+    'rest_framework_simplejwt',
     
     'common',
     'documentos',
     'emissores',
     'emails',
+    'companies',
+    'users',
 ]
 
 MIDDLEWARE = [
@@ -109,11 +113,18 @@ AUTH_PASSWORD_VALIDATORS = [
 
 REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 100
+    'PAGE_SIZE': 100,
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    )
 }
 
-# Internationalization
-# https://docs.djangoproject.com/en/5.0/topics/i18n/
+SIMPLE_JWT = {
+    "ACCESS_TOKEN_LIFETIME": timedelta(hours=10),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=30),
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True
+}
 
 LANGUAGE_CODE = 'pt-br'
 

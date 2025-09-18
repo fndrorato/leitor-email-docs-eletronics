@@ -23,12 +23,12 @@ export default function AuthLayout({
                 <img
                   width={231}
                   height={48}
-                  src="/images/logo/auth-logo.svg"
+                  src="/images/logo/auth-logo_docs.svg"
                   alt="Logo"
                 />
               </Link>
-              <p className="text-center text-gray-400 dark:text-white/60">
-                {t("channelManagementSystem")}
+              <p className="text-center text-gray-200 text-xl font-bold text- dark:text-white/60">
+                {t("managementSystem")}
               </p>
             </div>
           </div>

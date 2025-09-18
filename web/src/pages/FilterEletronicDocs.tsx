@@ -12,6 +12,8 @@ import { useState, useEffect } from "react";
 import axios from '../api/axios';
 import { useTranslation } from 'react-i18next';
 import { useFilters } from '../context/FilterContext';
+import { useAuth } from "../context/AuthContext";
+import { Modal } from "../components/ui/modal";
 
 // Define the TypeScript interface for the table rows
 interface Document {
@@ -53,12 +55,19 @@ export default function FilterEletronicDocs() {
   const [previousPageUrl, setPreviousPageUrl] = useState<string | null>(null);
   const [totalCount, setTotalCount] = useState(0);
   const [currentPage, setCurrentPage] = useState(1);
+  const { user } = useAuth();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [xmlContent, setXmlContent] = useState("");
 
   const fetchDocuments = async (url?: string) => {
     try {
       setLoading(true);
       const apiUrl = url || '/api/v1/documentos/';
       const params: any = { limit: 100 }; // Set limit to 100
+
+      if (user?.company) {
+        params.company = user.company;
+      }
 
       if (!url) { // Only apply filters if not navigating via next/previous URLs
         if (startDate) params.start_date = startDate;
@@ -94,8 +103,10 @@ export default function FilterEletronicDocs() {
   };
 
   useEffect(() => {
-    fetchDocuments();
-  }, [emissor, startDate, endDate, cdc, numDoc, tipoDocumento, contextApplyFilters]);
+    if (user) {
+      fetchDocuments();
+    }
+  }, [emissor, startDate, endDate, cdc, numDoc, tipoDocumento, contextApplyFilters, user]);
 
   const handleNextPage = () => {
     if (nextPageUrl) {
@@ -138,6 +149,20 @@ export default function FilterEletronicDocs() {
     } catch (err) {
       console.error(`Error downloading ${type} for cdc ${cdc}:`, err);
       alert(`Failed to download ${type} file.`);
+    }
+  };
+
+  const handleShowXml = async (cdc: string) => {
+    try {
+      const url = `/api/v1/documentos/download-xml/${cdc}/`;
+      const response = await axios.get(url, {
+        responseType: 'text',
+      });
+      setXmlContent(response.data);
+      setIsModalOpen(true);
+    } catch (err) {
+      console.error(`Error fetching xml for cdc ${cdc}:`, err);
+      alert(`Failed to fetch xml file.`);
     }
   };
 
@@ -222,7 +247,7 @@ export default function FilterEletronicDocs() {
                       src="/images/icons/xml-document.svg"
                       alt="XML"
                       className="w-6 h-6 cursor-pointer"
-                      onClick={() => handleDownload('xml', doc.cdc)}
+                      onClick={() => handleShowXml(doc.cdc)}
                     />
                     <img
                       src="/images/icons/pdf-file.svg"
@@ -236,15 +261,28 @@ export default function FilterEletronicDocs() {
             ))}
           </TableBody>
         </Table>
-      </div>
-      <div className="flex justify-between items-center mt-4">
-        <Button onClick={handlePrevPage} disabled={!previousPageUrl}>Anterior</Button>
-        <span className="text-theme-sm text-gray-700 dark:text-gray-300">
-          Página {currentPage} de {totalPages}
-        </span>
-        <Button onClick={handleNextPage} disabled={!nextPageUrl}>Próxima</Button>
+        {/* Pagination Controls */}
+        <div className="flex items-center justify-between mt-4">
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Page {currentPage} of {totalPages}
+          </p>
+        </div>
       </div>
 
+      <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} isFullscreen={true} showCloseButton={false}>
+        <div className="p-4">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-lg font-bold dark:text-white">XML Content</h2>
+            <div>
+              <Button onClick={() => handleDownload('xml', xmlContent)} className="mr-2">Download</Button>
+              <Button onClick={() => setIsModalOpen(false)}>Close</Button>
+            </div>
+          </div>
+          <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-lg overflow-auto text-gray-800 dark:text-gray-200">
+            <code>{xmlContent}</code>
+          </pre>
+        </div>
+      </Modal>
 
     </div>
   );

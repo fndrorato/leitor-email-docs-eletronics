@@ -60,6 +60,14 @@ class DocumentoListView(ListAPIView):
                 fecha_emision__range=[fecha_inicio, fecha_fim]
             )
 
+        company_param = self.request.GET.getlist("company")
+        if company_param:
+            # suporta tanto ?company=1,3 quanto ?company=1&company=3
+            company_ids = []
+            for c in company_param:
+                company_ids.extend(c.split(","))
+            queryset = queryset.filter(company__id__in=company_ids)
+
         return queryset.order_by('-fecha_emision')
 
 class TipoDocumentoListView(ListAPIView):

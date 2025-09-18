@@ -9,19 +9,27 @@ interface UserData {
   photo?: string;
   permissions: string[];
   profilePicture?: string;
+  company: string;
 }
 
 interface AuthContextType {
   user: UserData | null;
   setUser: React.Dispatch<React.SetStateAction<UserData | null>>;
-  login: (userData: UserData, accessToken: string, refreshToken: string) => void;
+  login: (
+    userData: UserData,
+    accessToken: string,
+    refreshToken: string,
+    company: string,
+  ) => void;
   logout: () => void;
   updateUser: (userData: Partial<UserData>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<UserData | null>(null);
 
   useEffect(() => {
@@ -32,8 +40,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const storedPermissions = localStorage.getItem('permissions');
     const storedPhone = localStorage.getItem('phone');
     const storedPhotoUser = localStorage.getItem('photoUser');
+    const storedCompany = localStorage.getItem('company');
 
-    if (storedFirstName && storedLastName && storedEmail && storedUserId && storedPermissions) {
+    if (
+      storedFirstName &&
+      storedLastName &&
+      storedEmail &&
+      storedUserId &&
+      storedPermissions &&
+      storedCompany
+    ) {
       try {
         const permissions = JSON.parse(storedPermissions);
         setUser({
@@ -44,15 +60,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           permissions: permissions,
           phone: storedPhone || '',
           photo: storedPhotoUser || '',
+          company: storedCompany,
         });
       } catch (e) {
-        console.error("Failed to parse permissions from localStorage", e);
+        console.error('Failed to parse permissions from localStorage', e);
         logout(); // Clear invalid data
       }
     }
   }, []);
 
-  const login = (userData: UserData, accessToken: string, refreshToken: string) => {
+  const login = (
+    userData: UserData,
+    accessToken: string,
+    refreshToken: string,
+    company: string,
+  ) => {
     console.log(userData);
     localStorage.setItem('accessToken', accessToken);
     localStorage.setItem('refreshToken', refreshToken);
@@ -62,6 +84,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.setItem('userId', userData.userId);
     localStorage.setItem('permissions', JSON.stringify(userData.permissions));
     localStorage.setItem('phone', userData.phone);
+    localStorage.setItem('company', company);
     if (userData.photo) {
       localStorage.setItem('photoUser', userData.photo);
     }
@@ -76,6 +99,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     localStorage.removeItem('email');
     localStorage.removeItem('userId');
     localStorage.removeItem('permissions');
+    localStorage.removeItem('company');
     setUser(null);
   };
 

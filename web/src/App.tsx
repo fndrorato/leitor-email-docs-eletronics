@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import SignIn from "./pages/AuthPages/SignIn";
 import SignUp from "./pages/AuthPages/SignUp";
 import NotFound from "./pages/OtherPage/NotFound";
@@ -35,11 +35,10 @@ export default function App() {
       <Router>
         <ScrollToTop />
         <Routes>
-          <Route element={<FilterProvider><AppLayout /></FilterProvider>}> {/* AppLayout principal para todas as rotas com layout */}
-            <Route path="/" element={<FilterEletronicDocs />} /> {/* Filter.tsx é público e usa AppLayout */}
-
-            {/* Rotas protegidas */}
-            <Route element={<ProtectedRoute redirectPath="/signin" />}>
+          <Route element={<ProtectedRoute redirectPath="/signin" />}>
+            <Route element={<FilterProvider><AppLayout /></FilterProvider>}>
+              <Route path="/" element={<Navigate to="/filter" replace />} />
+              <Route path="/filter" element={<FilterEletronicDocs />} />
               <Route path="/home" element={<Home />} />
               {/* Others Page */}
               <Route path="/profile" element={<UserProfiles />} />
@@ -78,7 +77,7 @@ export default function App() {
           <Route path="/signup" element={<SignUp />} />
 
           {/* Fallback Route */}
-          <Route path="*" element={<NotFound />} />
+          <Route path="*" element={<Navigate to="/filter" replace />} />
         </Routes>
       </Router>
     </AuthProvider>

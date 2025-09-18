@@ -1,4 +1,5 @@
 from django.db import models
+from companies.models import Company
 from emissores.models import Emissor
 
 class TipoDocumento(models.Model):
@@ -18,6 +19,7 @@ class Documento(models.Model):
     """
     Modelo que representa un documento.
     """
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
     cdc = models.CharField(max_length=48, unique=True) # <DE Id="01800628535055001003334022025072617152780206">
     tipo_documento = models.ForeignKey(TipoDocumento, on_delete=models.CASCADE) #iTiDE
     est = models.CharField(max_length=10, null=True, blank=True) #dEst

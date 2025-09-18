@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Link } from "react-router";
 // import { useSidebar } from "../context/SidebarContext";
+import UserDropdown from "../components/header/UserDropdown";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
 import FilterPanel from "../components/FilterPanel";
 
@@ -49,12 +50,12 @@ const AppHeader: React.FC = () => {
           <Link to="/" className="flex items-center justify-center">
             <img
               className="dark:hidden h-12 w-auto"
-              src="./images/logo/logo.svg"
+              src="./images/logo/logo_supers.svg"
               alt="Logo"
             />
             <img
               className="hidden dark:block h-12 w-auto"
-              src="./images/logo/logo.svg"
+              src="./images/logo/logo_supers.svg"
               alt="Logo"
             />
           </Link>
@@ -106,7 +107,9 @@ const AppHeader: React.FC = () => {
               Filtros
             </button>
             <ThemeToggleButton />
+            <UserDropdown />
           </div>
+          
           <div className="absolute left-0 right-0 top-full z-50 px-4">
             <FilterPanel isOpen={isApplicationMenuOpen} onClose={() => setApplicationMenuOpen(false)} />
           </div>

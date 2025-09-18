@@ -35,7 +35,7 @@ export default function SignInForm({ onLoginSuccess }: SignInFormProps) {
         password: password,
       });
 
-      const { access, refresh, first_name, last_name, user_id, phone, photo, permissions } = response.data;
+      const { access, refresh, first_name, last_name, user_id, phone, photo, permissions, company } = response.data;
       login(
         {
           firstName: first_name,
@@ -44,10 +44,12 @@ export default function SignInForm({ onLoginSuccess }: SignInFormProps) {
           userId: user_id,
           permissions: permissions,
           phone: phone,
-          photo: photo
+          photo: photo,
+          company: company,
         },
         access,
-        refresh
+        refresh,
+        company
       );
 
       if (onLoginSuccess) {

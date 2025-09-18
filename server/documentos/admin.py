@@ -11,7 +11,7 @@ class TipoDocumentoAdmin(admin.ModelAdmin):
 
 @admin.register(Documento)
 class DocumentoAdmin(admin.ModelAdmin):
-    list_display = ('cdc', 'tipo_documento', 'est', 'pun_exp', 'num_doc', 'emissor', 'fecha_emision', 'monto_total', 'created_at', 'updated_at')
-    search_fields = ('cdc', 'num_doc', 'emissor__nombre')
+    list_display = ('company__name', 'cdc', 'tipo_documento', 'est', 'pun_exp', 'num_doc', 'emissor', 'fecha_emision', 'monto_total', 'created_at', 'updated_at')
+    search_fields = ('company__name', 'cdc', 'num_doc', 'emissor__nombre')
     ordering = ('-fecha_emision',)
-    list_filter = ('tipo_documento', 'fecha_emision', 'emissor')
+    list_filter = ('company__name', 'tipo_documento', 'fecha_emision', 'emissor')

@@ -1,11 +1,13 @@
 from django.db import models
 from django.utils import timezone
+from companies.models import Company
 
 
 class User(models.Model):
     """
     Model representing a user in the system.
     """
+    company = models.ForeignKey(Company, on_delete=models.CASCADE)
     username = models.CharField(max_length=150, unique=True)
     password = models.CharField(max_length=128)
     host = models.CharField(max_length=128, blank=True)

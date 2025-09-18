@@ -19,6 +19,7 @@ export default function UserInfoCard() {
     lastName: "",
     email: "",
     phone: "",
+    company: "",
   });
 
   useEffect(() => {
@@ -28,9 +29,10 @@ export default function UserInfoCard() {
         lastName: user.lastName || "",
         email: user.email || "",
         phone: user.phone || "",
+        company: user.company || "",
       });
     }
-  }, []);
+  }, [user]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -90,6 +92,15 @@ export default function UserInfoCard() {
               </p>
               <p className="text-sm font-medium text-gray-800 dark:text-white/90">
                 {userData.phone}
+              </p>
+            </div>
+
+            <div>
+              <p className="mb-2 text-xs leading-normal text-gray-500 dark:text-gray-400">
+                {t('company')}
+              </p>
+              <p className="text-sm font-medium text-gray-800 dark:text-white/90">
+                {userData.company}
               </p>
             </div>
 
