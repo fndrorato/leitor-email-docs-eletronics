@@ -266,6 +266,22 @@ export default function FilterEletronicDocs() {
           <p className="text-sm text-gray-600 dark:text-gray-400">
             Page {currentPage} of {totalPages}
           </p>
+          <div className="flex space-x-2">
+            <Button 
+              onClick={handlePrevPage} 
+              disabled={!previousPageUrl}
+              className={!previousPageUrl ? "opacity-50 cursor-not-allowed" : ""}
+            >
+              Previous
+            </Button>
+            <Button 
+              onClick={handleNextPage} 
+              disabled={!nextPageUrl}
+              className={!nextPageUrl ? "opacity-50 cursor-not-allowed" : ""}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       </div>
 
