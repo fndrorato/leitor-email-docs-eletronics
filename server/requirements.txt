@@ -16,6 +16,7 @@ django-cors-headers==4.7.0
 django-jazzmin==3.0.1
 django-timezone-field==7.1
 djangorestframework==3.16.0
+djangorestframework_simplejwt==5.5.1
 docopt==0.6.2
 dotenv==0.9.9
 idna==3.10
@@ -26,6 +27,7 @@ packaging==25.0
 pillow==11.3.0
 prompt_toolkit==3.0.51
 psycopg2-binary==2.9.10
+PyJWT==2.10.1
 python-crontab==3.3.0
 python-dateutil==2.9.0.post0
 python-decouple==3.8
