@@ -13,6 +13,12 @@ class User(models.Model):
     host = models.CharField(max_length=128, blank=True)
     port = models.CharField(max_length=128, blank=True)
     active = models.BooleanField(default=True)
+    office365 = models.BooleanField(default=False)
+    office365_client_id = models.CharField(max_length=255, blank=True, null=True, default=None)
+    office365_tenant_id = models.CharField(max_length=255, blank=True, null=True, default=None)
+    office365_client_secret = models.CharField(max_length=255, blank=True, null=True, default=None)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return self.username

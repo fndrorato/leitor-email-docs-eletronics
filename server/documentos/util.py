@@ -5,10 +5,13 @@ import pytz
 import qrcode
 import traceback
 import xml.etree.ElementTree as ET
+import requests
+import os
 from babel.numbers import format_currency
 from common.models import Departamento, Cidade
-from datetime import datetime
+from datetime import datetime, timedelta
 from decimal import Decimal
+from email import policy
 from documentos.models import TipoDocumento, Documento
 from emails.models import EmailXmlError, User as EmailAccount
 from emissores.models import Emissor
@@ -17,6 +20,22 @@ from num2words import num2words
 from PIL import Image
 from typing import Optional
 
+def get_graph_token(ms_tenant_id=None, ms_client_id=None, ms_client_secret=None):
+    """Obtém token de acesso do Microsoft Graph via client credentials."""
+    tenant_id = ms_tenant_id
+    client_id = ms_client_id
+    client_secret = ms_client_secret
+
+    url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+    data = {
+        "client_id": client_id,
+        "scope": "https://graph.microsoft.com/.default",
+        "client_secret": client_secret,
+        "grant_type": "client_credentials",
+    }
+    response = requests.post(url, data=data)
+    response.raise_for_status()
+    return response.json()["access_token"]
 
 # locale.setlocale(locale.LC_ALL, 'es_PY.UTF-8')
 def simplificar_dict(d):
@@ -30,7 +49,8 @@ def simplificar_dict(d):
         return [simplificar_dict(item) for item in d]
     return d
 
-def processar_nfe_xml(xml_str: str):
+def processar_nfe_xml(xml_str: str, user):
+    print('Iniciando o processar NFE XML')
     NS = {'ns': 'http://ekuatia.set.gov.py/sifen/xsd'}
     root = ET.fromstring(xml_str)
 
@@ -108,9 +128,11 @@ def processar_nfe_xml(xml_str: str):
     )
 
     # 7) Documento
+    print("➡️ Processando documento:", cdc)
     documento, created = Documento.objects.get_or_create(
         cdc=cdc,
         defaults={
+            'company': user.company,
             'tipo_documento': tipo_doc,
             'est': est,
             'pun_exp': pun_exp,

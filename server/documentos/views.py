@@ -35,6 +35,7 @@ class DocumentoListView(ListAPIView):
             'tipo_documento', 'emissor__cidade__departamento'
         )
 
+        print(self.request.GET)
         # Filtros opcionais via query params
         emissor_id = self.request.GET.get('emissor')
         cdc = self.request.GET.get('cdc')
@@ -60,13 +61,22 @@ class DocumentoListView(ListAPIView):
                 fecha_emision__range=[fecha_inicio, fecha_fim]
             )
 
-        company_param = self.request.GET.getlist("company")
+        company_param = (
+            self.request.GET.getlist("company") or
+            self.request.GET.getlist("company[]")
+        )
+
         if company_param:
+            print("Parâmetro company recebido:", company_param)
             # suporta tanto ?company=1,3 quanto ?company=1&company=3
             company_ids = []
             for c in company_param:
                 company_ids.extend(c.split(","))
+            
+            print("Filtrando por empresas:", company_ids)
             queryset = queryset.filter(company__id__in=company_ids)
+        else:
+            print("Nenhum parâmetro company fornecido; retornando vazio.")
 
         return queryset.order_by('-fecha_emision')
 

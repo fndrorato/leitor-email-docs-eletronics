@@ -6,6 +6,7 @@ Este projeto é uma aplicação fullstack composta por:
 - **Frontend** em React
 - Banco de dados **PostgreSQL**
 - Fila de tarefas **Redis + Celery**
+- **Gerador PDF** em React (serve apenas para gerar o PDF que o usuário deseja baixar)
 
 ## 🚀 Funcionalidades
 
@@ -19,13 +20,14 @@ Este projeto é uma aplicação fullstack composta por:
 
 ## 🧱 Estrutura dos Serviços (Docker Compose)
 
-| Serviço     | Porta Externa | Descrição                          |
-|-------------|----------------|------------------------------------|
-| `db`        | 5436           | Banco de dados PostgreSQL 15       |
-| `redis`     | 6381           | Armazenamento de tarefas Celery    |
-| `backend`   | 4101           | API Django                         |
-| `celery`    | -              | Worker Celery                      |
-| `frontend`  | 4102           | Interface Web (React)              |
+| Serviço       | Porta Externa  | Descrição                          |
+|---------------|----------------|------------------------------------|
+| `db`          | 5436           | Banco de dados PostgreSQL 15       |
+| `redis`       | 6381           | Armazenamento de tarefas Celery    |
+| `backend`     | 4101           | API Django                         |
+| `celery`      | -              | Worker Celery                      |
+| `frontend`    | 4102           | Interface Web (React)              |
+| `gerador-pdf` | 4102           | App que gera o PDF.                |
 
 ---
 
@@ -43,25 +45,40 @@ cd seu-repositorio
 Crie um arquivo `.env` na raiz com o seguinte conteúdo:
 
 ```dotenv
-# Banco de dados
-DB_NAME=docselectronicos
-DB_USER=whatsuser
-DB_PASSWORD=whatspass
-DB_HOST=db
-DB_PORT=5432
-
-# Django
+# Backend
 DEBUG=True
+DB_NAME=database_name
+DB_USER=database_user
+DB_PASSWORD=database_password
+DB_HOST=db (nome do host do docker compose)
+DB_PORT=5432 (porta padrão do postgresql)
+
+DJANGO_SUPERUSER_USERNAME=usuario
+DJANGO_SUPERUSER_EMAIL=admin@example.com
+DJANGO_SUPERUSER_PASSWORD=senha
+
+REDIS_HOST=redis
+REDIS_PORT=6379
+
+ROUTE_PDF_GENERATOR=http://ip_do_servidor:port
+
+
+# Frontend
+VITE_API_BASE_URL=http://backend:4101
+VITE_APP_TITLE=Filtro de Documentos Electronicos
+VITE_APP_PAGE_DESCRIPTION=Sistema de filtro para documentos electronicos emitidos contra BOX Mayorista
 ```
 
-> ✅ **Importante:** esses valores são apenas exemplos. Use variáveis seguras em produção.
-
+> ⚠️‼️ **IMPORTANTE**
+> ⚠️‼️ Hoje dia 08/10/2025 - começaremos a utilizar o e-mail documentos.electronicos@amiria.com.py
+> ⚠️‼️ Ele será válido por um ano o token.
 ---
 
 ### 3. Suba os containers
 
 ```bash
-docker-compose up --build
+docker compose build
+docker compose up -d
 ```
 
 - Acesse o **backend (Django API)**: [http://localhost:4101](http://localhost:4101)
@@ -78,6 +95,7 @@ docker-compose up --build
 │   ├── users/       # Controle de usuários IMAP
 │   └── ...
 ├── web/             # Frontend React
+├── gerador-pdf/     # Sistema que gera o PDF do XML
 ├── .env             # Variáveis de ambiente
 ├── docker-compose.yml
 └── README.md
