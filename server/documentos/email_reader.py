@@ -276,14 +276,14 @@ def leitor_email_graph(user, max_emails=200):
                         print(f"⚠️ Falha ao registrar erro no banco: {dbe}")
 
             # Move para “Itens Excluídos” se processou com sucesso
-            # if tudo_ok and encontrou_xml:
-            #     move_url = f"https://graph.microsoft.com/v1.0/users/{user.username}/messages/{msg_id}/move"
-            #     move_data = {"destinationId": "deleteditems"}
-            #     move_resp = requests.post(move_url, headers=headers, json=move_data)
-            #     if move_resp.status_code == 201:
-            #         emails_apagados += 1
-            #     else:
-            #         print(f"⚠️ Falha ao mover para lixeira: {move_resp.text}")
+            if tudo_ok and encontrou_xml:
+                move_url = f"https://graph.microsoft.com/v1.0/users/{user.username}/messages/{msg_id}/move"
+                move_data = {"destinationId": "deleteditems"}
+                move_resp = requests.post(move_url, headers=headers, json=move_data)
+                if move_resp.status_code == 201:
+                    emails_apagados += 1
+                else:
+                    print(f"⚠️ Falha ao mover para lixeira: {move_resp.text}")
 
             emails_processados += 1
 
