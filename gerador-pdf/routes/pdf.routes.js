@@ -20,37 +20,51 @@ router.post('/factura', async (req, res) => {
         // Constrói o caminho absoluto para o logo de forma mais robusta
         const projectRoot = path.resolve(__dirname, '..'); 
         const logoPath = path.join(projectRoot, 'media', 'logoFactura.png');
+        
+        // A variável que conterá o objeto rDE, não o documento completo.
+        let dataDE; 
 
-        // Log para verificar o caminho final do logo antes de passar para a função Factura
-        console.log('Caminho do logo da Fatura na rota:', logoPath);
+        // --- 2. Lógica para "desembrulhar" (unwrap) o nó rDE ---
 
-        let data; // Esta variável será o nosso nó rDE final
+        // 2.1. Checagem do Caso SOAP (mais complexo)
+        if (parsed['soap:Envelope'] && parsed['soap:Envelope']['soap:Body']) {
+            console.log('XML detectado como SOAP Envelope. Desembrulhando...');
 
-        // 2. Lógica para "desembrulhar" (unwrap) o nó rDE
-        if (parsed.rLoteDE) {
-            // Caso 1: O XML começa com <rLoteDE>, que é o nó raiz
-            console.log('XML detectado como Lote (rLoteDE). Desembrulhando...');
+            const body = parsed['soap:Envelope']['soap:Body'];
             
-            // O nó real que nos interessa (rDE) estará dentro de rLoteDE
-            dataParsed = parsed.rLoteDE; 
+            // O próximo nível, 'rEnviDe', não tem prefixo, então use a notação de ponto
+            const rEnviDe = body.rEnviDe; 
 
-            if (!dataParsed) {
-                // Checagem de segurança caso rLoteDE esteja vazio ou malformado
+            if (rEnviDe && rEnviDe.xDE && rEnviDe.xDE.rDE) {
+                dataDE = rEnviDe.xDE;
+                console.log('Nó rDE encontrado dentro do envelope SOAP.');
+            } else {
+                return res.status(400).json({ error: 'XML SOAP malformado ou estrutura aninhada inválida.' });
+            }
+        } 
+        // 2.2. Checagem do Caso Lote (rLoteDE)
+        else if (parsed.rLoteDE) {
+            console.log('XML detectado como Lote (rLoteDE). Desembrulhando...');
+            dataDE = parsed.rLoteDE; 
+
+            if (!dataDE) {
                 return res.status(400).json({ error: 'XML de Lote malformado: rDE não encontrado dentro de rLoteDE' });
             }
 
-        } else if (parsed.rDE) {
-            // Caso 2: O XML começa diretamente com <rDE>, que é o nó raiz
+        } 
+        // 2.3. Checagem do Caso Documento Único (rDE)
+        else if (parsed.rDE) {
             console.log('XML detectado como Documento único (rDE). Usando nó raiz.');
-            dataParsed = parsed;
+            dataDE = parsed;
 
-        } else {
-            // Caso 3: Não é rLoteDE nem rDE (XML totalmente inesperado)
+        } 
+        // 2.4. Caso Inesperado
+        else {
             console.log('XML com formato raiz desconhecido.', Object.keys(parsed));
-            return res.status(400).json({ error: 'Formato XML raiz inválido. Esperado rLoteDE ou rDE.' });
-        }        
+            return res.status(400).json({ error: 'Formato XML raiz inválido. Esperado SOAP, rLoteDE ou rDE.' });
+        }         
 
-        const pdfBuffer = await Factura(dataParsed, cod_empresa, nome_empresa, logoPath);
+        const pdfBuffer = await Factura(dataDE, cod_empresa, nome_empresa, logoPath);
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'inline; filename=factura.pdf');
