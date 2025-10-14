@@ -108,6 +108,7 @@ exports.Factura = async(data, cod_empresa, desc_empresa, ruta_logo) => {
       oc = infAdicParts[2] || '';
     }
     const dCarQR = data.rDE?.gCamFuFD?.dCarQR || '';
+    console.log("Código QR:", dCarQR);
     let qr = await QRCode.toDataURL(dCarQR);
     let columnBand = false;
 

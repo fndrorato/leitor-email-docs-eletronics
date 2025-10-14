@@ -33,3 +33,7 @@ dist-ssr
 
 # Python
 *.pyc
+
+# Arquivos de configuração do sistema
+/server/test_exchange.py
+/server/test_imap_office365.py
