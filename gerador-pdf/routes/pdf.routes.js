@@ -24,7 +24,33 @@ router.post('/factura', async (req, res) => {
         // Log para verificar o caminho final do logo antes de passar para a função Factura
         console.log('Caminho do logo da Fatura na rota:', logoPath);
 
-        const pdfBuffer = await Factura(parsed, cod_empresa, nome_empresa, logoPath);
+        let data; // Esta variável será o nosso nó rDE final
+
+        // 2. Lógica para "desembrulhar" (unwrap) o nó rDE
+        if (parsed.rLoteDE) {
+            // Caso 1: O XML começa com <rLoteDE>, que é o nó raiz
+            console.log('XML detectado como Lote (rLoteDE). Desembrulhando...');
+            
+            // O nó real que nos interessa (rDE) estará dentro de rLoteDE
+            dataParsed = parsed.rLoteDE; 
+
+            if (!dataParsed) {
+                // Checagem de segurança caso rLoteDE esteja vazio ou malformado
+                return res.status(400).json({ error: 'XML de Lote malformado: rDE não encontrado dentro de rLoteDE' });
+            }
+
+        } else if (parsed.rDE) {
+            // Caso 2: O XML começa diretamente com <rDE>, que é o nó raiz
+            console.log('XML detectado como Documento único (rDE). Usando nó raiz.');
+            dataParsed = parsed;
+
+        } else {
+            // Caso 3: Não é rLoteDE nem rDE (XML totalmente inesperado)
+            console.log('XML com formato raiz desconhecido.', Object.keys(parsed));
+            return res.status(400).json({ error: 'Formato XML raiz inválido. Esperado rLoteDE ou rDE.' });
+        }        
+
+        const pdfBuffer = await Factura(dataParsed, cod_empresa, nome_empresa, logoPath);
 
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', 'inline; filename=factura.pdf');

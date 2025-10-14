@@ -108,7 +108,31 @@ exports.Factura = async(data, cod_empresa, desc_empresa, ruta_logo) => {
       oc = infAdicParts[2] || '';
     }
     const dCarQR = data.rDE?.gCamFuFD?.dCarQR || '';
-    console.log("Código QR:", dCarQR);
+    console.log('1. data existe?', !!data); // Transforma em booleano para checagem rápida
+
+    // Checagem do Nível 1: rDE
+    if (data && data.rDE) {
+        console.log('2. data.rDE existe?', true, data.rDE);
+        
+        // Checagem do Nível 2: gCamFuFD
+        if (data.rDE.gCamFuFD) {
+            console.log('3. data.rDE.gCamFuFD existe?', true, data.rDE.gCamFuFD);
+            
+            // Checagem do Nível 3: dCarQR
+            if (data.rDE.gCamFuFD.dCarQR) {
+                console.log('4. data.rDE.gCamFuFD.dCarQR existe?', true, data.rDE.gCamFuFD.dCarQR);
+                
+                // Atribuição final (se for o caso)
+                const dCarQR = data.rDE.gCamFuFD.dCarQR;
+            } else {
+                console.log('4. data.rDE.gCamFuFD.dCarQR não existe ou é falsy (null, undefined, etc.)');
+            }
+        } else {
+            console.log('3. data.rDE.gCamFuFD não existe.');
+        }
+    } else {
+        console.log('2. data.rDE não existe.');
+    }    
     let qr = await QRCode.toDataURL(dCarQR);
     let columnBand = false;
 
