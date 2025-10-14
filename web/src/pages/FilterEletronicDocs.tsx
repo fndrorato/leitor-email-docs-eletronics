@@ -14,6 +14,7 @@ import { useTranslation } from 'react-i18next';
 import { useFilters } from '../context/FilterContext';
 import { useAuth } from "../context/AuthContext";
 import { Modal } from "../components/ui/modal";
+import { useNavigate } from "react-router-dom";
 
 // Define the TypeScript interface for the table rows
 interface Document {
@@ -58,6 +59,8 @@ export default function FilterEletronicDocs() {
   const { user } = useAuth();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [xmlContent, setXmlContent] = useState("");
+  const navigate = useNavigate();
+  // const location = useLocation();
 
   const fetchDocuments = async (url?: string) => {
     try {
@@ -70,12 +73,23 @@ export default function FilterEletronicDocs() {
       }
 
       if (!url) { // Only apply filters if not navigating via next/previous URLs
+        console.log('Applying filters:', { startDate, endDate, emissor, cdc, numDoc, tipoDocumento });
         if (startDate) params.start_date = startDate;
         if (endDate) params.end_date = endDate;
         if (emissor) params.emissor = emissor;
         if (cdc) params.cdc = cdc;
         if (numDoc) params.num_doc__icontains = numDoc;
         if (tipoDocumento) params.tipo_documento = tipoDocumento;
+
+        const searchParams = new URLSearchParams();
+        if (startDate) searchParams.set('start_date', startDate);
+        if (endDate) searchParams.set('end_date', endDate);
+        if (emissor) searchParams.set('emissor', emissor);
+        if (cdc) searchParams.set('cdc', cdc);
+        if (numDoc) searchParams.set('num_doc__icontains', numDoc);
+        if (tipoDocumento) searchParams.set('tipo_documento', tipoDocumento);
+        navigate(`?${searchParams.toString()}`, { replace: true });
+
       } else {
         // Extract existing params from URL if navigating via next/previous
         const urlParams = new URLSearchParams(url.split('?')[1]);

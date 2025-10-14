@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 
-import { Link } from "react-router";
+import { Link, useLocation } from "react-router-dom";
+import axios from '../api/axios';
 // import { useSidebar } from "../context/SidebarContext";
 import UserDropdown from "../components/header/UserDropdown";
 import { ThemeToggleButton } from "../components/common/ThemeToggleButton";
@@ -9,6 +10,7 @@ import FilterPanel from "../components/FilterPanel";
 
 const AppHeader: React.FC = () => {
   const [isApplicationMenuOpen, setApplicationMenuOpen] = useState(false);
+  const location = useLocation();
 
   // const { toggleSidebar, toggleMobileSidebar } = useSidebar();
 
@@ -40,6 +42,40 @@ const AppHeader: React.FC = () => {
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+
+  const handleExportToExcel = async () => {
+    const queryParams = new URLSearchParams(location.search);
+    const params: Record<string, string> = {};
+
+    if (queryParams.get("start_date")) params.start_date = queryParams.get("start_date") as string;
+    if (queryParams.get("end_date")) params.end_date = queryParams.get("end_date") as string;
+    if (queryParams.get("emissor")) params.emissor = queryParams.get("emissor") as string;
+    if (queryParams.get("cdc")) params.cdc = queryParams.get("cdc") as string;
+    if (queryParams.get("num_doc__icontains")) params.num_doc__icontains = queryParams.get("num_doc__icontains") as string;
+    if (queryParams.get("tipo_documento")) params.tipo_documento = queryParams.get("tipo_documento") as string;
+
+    const queryString = new URLSearchParams(params).toString();
+    const downloadUrl = `/api/v1/documentos/download-excel?${queryString}`;
+
+    try {
+      const response = await axios.get(downloadUrl, {
+        responseType: 'blob', // Important for downloading files
+      });
+
+      const filename = `documentos.xlsx`; // You might want to make this dynamic
+      const blob = new Blob([response.data], { type: response.headers['content-type'] });
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(link.href);
+    } catch (err) {
+      console.error(`Error downloading Excel file:`, err);
+      alert(`Failed to download Excel file.`);
+    }
+  };
 
   return (
     <header className="sticky top-0 flex w-full bg-white border-gray-200 z-99999 dark:border-gray-800 dark:bg-gray-900 lg:border-b">
@@ -106,6 +142,20 @@ const AppHeader: React.FC = () => {
               </svg>
               Filtros
             </button>
+            
+            <button 
+              onClick={handleExportToExcel} 
+              className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-theme-sm font-medium text-gray-700 shadow-theme-xs hover:bg-gray-50 hover:text-gray-800 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-white/[0.03] dark:hover:text-gray-200"
+            >
+              <img 
+                src="./images/icons/excel-file.svg" 
+                alt="Excel icon" 
+                width="20" 
+                height="20"
+              />
+              Exportar a Excel
+            </button>
+            
             <ThemeToggleButton />
             <UserDropdown />
           </div>

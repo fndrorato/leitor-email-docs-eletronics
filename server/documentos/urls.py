@@ -4,14 +4,15 @@ from documentos.views import (
     TipoDocumentoListView,
     DocumentoXMLDownloadView,
     DocumentoPDFView,
-    FacturaPDFView
+    FacturaPDFView,
+    DocumentoExportExcelView
 )
 
 
 urlpatterns = [
     path('documentos/download-xml/<str:cdc>/', DocumentoXMLDownloadView.as_view(), name='documento-download-xml'),    
     path("documentos/download-pdf/<str:cdc>/", FacturaPDFView.as_view(), name="documento-download-pdf"),
+    path('documentos/download-excel/', DocumentoExportExcelView.as_view(), name='documento-download-excel'),
     path('documentos/', DocumentoListView.as_view(), name='documento-list'),
     path('tipos-documento/', TipoDocumentoListView.as_view(), name='tipo-documento-list'),
-    
 ]

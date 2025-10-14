@@ -1,4 +1,5 @@
 import os
+import openpyxl
 import requests
 import xmltodict
 import xml.etree.ElementTree as ET
@@ -35,7 +36,6 @@ class DocumentoListView(ListAPIView):
             'tipo_documento', 'emissor__cidade__departamento'
         )
 
-        print(self.request.GET)
         # Filtros opcionais via query params
         emissor_id = self.request.GET.get('emissor')
         cdc = self.request.GET.get('cdc')
@@ -80,6 +80,64 @@ class DocumentoListView(ListAPIView):
 
         return queryset.order_by('-fecha_emision')
 
+class DocumentoExportExcelView(APIView):
+    # Reutiliza o método de filtragem exato da sua ListAPIView
+    def get_queryset(self):
+        # Cria uma instância temporária da ListAPIView para chamar o método de filtro
+        # Isso garante que a lógica de filtragem seja idêntica.
+        list_view = DocumentoListView()
+        list_view.request = self.request # Passa a request atual para a instância temporária
+        
+        # Chama o get_queryset que contém toda a sua lógica de filtro
+        return list_view.get_queryset()
+
+    def get(self, request, *args, **kwargs):
+        # 1. Obtém os dados filtrados (QuerySet)
+        queryset = self.get_queryset()
+        
+        # 2. Cria um Workbook e uma Sheet do Excel em memória
+        workbook = openpyxl.Workbook()
+        sheet = workbook.active
+        sheet.title = "Documentos"
+        
+        # 3. Define os cabeçalhos do Excel
+        headers = [
+            'ID', 'CDC', 'Número Documento', 'Fecha Emission', 
+            'Tipo Documento', 'Emissor'
+        ]
+        sheet.append(headers)
+        
+        # 4. Preenche as linhas com os dados do QuerySet
+        for documento in queryset:
+            # Assuma que você pode acessar as propriedades relacionadas (select_related)
+            numero_documento_completo = (
+                            f"{documento.est}-{documento.pun_exp}-{documento.num_doc}"
+                        )            
+            row_data = [
+                documento.id,
+                documento.cdc,
+                numero_documento_completo,
+                documento.fecha_emision.strftime('%Y-%m-%d %H:%M:%S'), # Formata a data
+                documento.tipo_documento.name if documento.tipo_documento else '',
+                documento.emissor.nome_fantasia if documento.emissor else ''
+            ]
+            sheet.append(row_data)
+
+        # 5. Configura o HttpResponse para download do arquivo Excel
+        
+        # Cria o buffer de bytes para salvar o Excel
+        response = HttpResponse(
+            content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+        )
+        
+        # Define o nome do arquivo para o navegador
+        response['Content-Disposition'] = 'attachment; filename="documentos_export.xlsx"'
+        
+        # Salva o workbook no response
+        workbook.save(response)
+        
+        return response
+
 class TipoDocumentoListView(ListAPIView):
     queryset = TipoDocumento.objects.all().order_by('name')
     serializer_class = TipoDocumentoSerializer
@@ -114,25 +172,6 @@ class FacturaPDFView(APIView):
             return HttpResponse(f"Erro ao processar XML: {e}", status=400)
 
 
-        # xml_content = documento.documento_xml
-        # # Parâmetros adicionais que podem vir da requisição ou de configurações
-        # cod_empresa = request.query_params.get('cod_empresa', 'default')
-        # desc_empresa = request.query_params.get('desc_empresa', 'Empresa Desconocida')
-        # # Em um ambiente real, 'ruta_logo' deve ser um caminho de arquivo acessível
-        # ruta_logo = request.query_params.get('ruta_logo', '/media/logoFactura.png') # Substitua pelo seu caminho real
-
-        # pdf_buffer = None
-        # if documento.tipo_documento and documento.tipo_documento.code == 1: # Assumindo 1 para Factura
-        #     pdf_buffer = generate_factura_pdf(xml_content, cod_empresa, desc_empresa, ruta_logo)
-        # elif documento.tipo_documento and documento.tipo_documento.code == 5: # Assumindo 5 para Nota de Crédito
-        #     pdf_buffer = generate_nota_credito_pdf(xml_content, cod_empresa, desc_empresa, ruta_logo)
-        # else:
-        #     return HttpResponse("Tipo de documento no soportado para generación de PDF.", status=400)
-
-        # response = HttpResponse(pdf_buffer, content_type='application/pdf')
-        # response['Content-Disposition'] = f'attachment; filename="{documento.cdc}.pdf"'
-        # return response
-        print('Gerando PDF para o documento:', cdc, ' com tipo de documento:', documento.tipo_documento.code)
         if (documento.tipo_documento.code == 1):
             rota_api = 'factura'
         elif (documento.tipo_documento.code == 5):
@@ -549,4 +588,3 @@ class DocumentoPDFView(APIView):
         response = HttpResponse(buffer, content_type='application/pdf')
         response['Content-Disposition'] = f'attachment; filename="{documento.cdc}.pdf"'
         return response
-
