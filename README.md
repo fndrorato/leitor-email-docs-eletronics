@@ -1,129 +1,139 @@
-# 📧 Leitor de E-mails com Processamento de Documentos Eletrônicos
+# 📧 Sistema de Lectura y Procesamiento de Documentos Electrónicos
+# 📧 Sistema de Leitura e Processamento de Documentos Eletrônicos
 
-Este projeto é uma aplicação fullstack composta por:
-
-- **Backend** em Django + Celery (para ler e processar anexos XML de e-mails)
-- **Frontend** em React
-- Banco de dados **PostgreSQL**
-- Fila de tarefas **Redis + Celery**
-- **Gerador PDF** em React (serve apenas para gerar o PDF que o usuário deseja baixar)
-
-## 🚀 Funcionalidades
-
-- Conexão com contas de e-mail via IMAP
-- Leitura de anexos `.xml` (Factura Electrónica - Paraguai)
-- Armazenamento em banco de dados
-- Visualização e filtros de documentos via frontend
-- Download do XML e visualização do conteúdo em PDF
+Sistema multi-empresa para lectura automática de correos electrónicos, procesamiento de archivos XML de Factura Electrónica (Paraguay) y gestión de documentos con exportación a PDF y Excel.
 
 ---
 
-## 🧱 Estrutura dos Serviços (Docker Compose)
+## 📖 Documentación Completa / Documentação Completa
 
-| Serviço       | Porta Externa  | Descrição                          |
-|---------------|----------------|------------------------------------|
-| `db`          | 5436           | Banco de dados PostgreSQL 15       |
-| `redis`       | 6381           | Armazenamento de tarefas Celery    |
-| `backend`     | 4101           | API Django                         |
-| `celery`      | -              | Worker Celery                      |
-| `frontend`    | 4102           | Interface Web (React)              |
-| `gerador-pdf` | 4102           | App que gera o PDF.                |
+Elija su idioma preferido para acceder a la documentación completa:
+
+Escolha seu idioma preferido para acessar a documentação completa:
+
+- **[🇪🇸 Español (Spanish)](./README.es.md)** - Documentación completa en español
+- **[🇧🇷 Português (Portuguese)](./README.pt-BR.md)** - Documentação completa em português
 
 ---
 
-## ⚙️ Como rodar o projeto
+## 🚀 Quick Start / Início Rápido
 
-### 1. Clone o repositório
+### Requisitos / Requirements
+
+- Docker 20.10+
+- Docker Compose 2.0+
+- 4GB RAM
+- 10GB espacio en disco / espaço em disco
+
+### Instalación / Instalação
 
 ```bash
-git clone https://github.com/seu-usuario/seu-repositorio.git
-cd seu-repositorio
-```
+# Clonar repositorio / Clonar repositório
+git clone https://github.com/seu-usuario/leitor-email.git
+cd leitor-email
 
-### 2. Configure o `.env`
+# Configurar .env (ver documentación completa)
+# Configurar .env (ver documentação completa)
+cp .env.example .env
 
-Crie um arquivo `.env` na raiz com o seguinte conteúdo:
+# Construir e iniciar / Construir e iniciar
+docker-compose build
+docker-compose up -d
 
-```dotenv
-# Backend
-DEBUG=True
-DB_NAME=database_name
-DB_USER=database_user
-DB_PASSWORD=database_password
-DB_HOST=db (nome do host do docker compose)
-DB_PORT=5432 (porta padrão do postgresql)
-
-DJANGO_SUPERUSER_USERNAME=usuario
-DJANGO_SUPERUSER_EMAIL=admin@example.com
-DJANGO_SUPERUSER_PASSWORD=senha
-
-REDIS_HOST=redis
-REDIS_PORT=6379
-
-ROUTE_PDF_GENERATOR=http://ip_do_servidor:port
-
-
-# Frontend
-VITE_API_BASE_URL=http://backend:4101
-VITE_APP_TITLE=Filtro de Documentos Electronicos
-VITE_APP_PAGE_DESCRIPTION=Sistema de filtro para documentos electronicos emitidos contra BOX Mayorista
-```
-
-> ⚠️‼️ **IMPORTANTE**
-> ⚠️‼️ Hoje dia 08/10/2025 - começaremos a utilizar o e-mail documentos.electronicos@amiria.com.py
-> ⚠️‼️ Ele será válido por um ano o token.
----
-
-### 3. Suba os containers
-
-```bash
-docker compose build
-docker compose up -d
-```
-
-- Acesse o **backend (Django API)**: [http://localhost:4101](http://localhost:4101)
-- Acesse o **frontend (React)**: [http://localhost:4102](http://localhost:4102)
-
----
-
-## 📂 Estrutura do Projeto
-
-```
-.
-├── server/          # Backend Django
-│   ├── documentos/  # App principal
-│   ├── users/       # Controle de usuários IMAP
-│   └── ...
-├── web/             # Frontend React
-├── gerador-pdf/     # Sistema que gera o PDF do XML
-├── .env             # Variáveis de ambiente
-├── docker-compose.yml
-└── README.md
-```
-
----
-
-## 🛠️ Comandos úteis
-
-### Backend Django
-
-```bash
-# Migrations
-docker exec -it leitor-email-backend python manage.py makemigrations
+# Ejecutar migraciones / Executar migrações
 docker exec -it leitor-email-backend python manage.py migrate
-
-# Criação de superusuário
-docker exec -it leitor-email-backend python manage.py createsuperuser
 ```
 
-### Celery
+### Acceso / Acesso
 
-```bash
-docker logs -f leitor-email-celery
+**Frontend:**
+- URL: http://10.1.1.4:4102/
+- Usuario/Usuário: admin@admin.com
+- Contraseña/Senha: Admin@2525
+
+**Backend Admin:**
+- URL: http://10.1.1.4:4101/admin
+- Usuario/Usuário: admin
+- Contraseña/Senha: Admin@2525
+
+---
+
+## 🏗️ Arquitectura / Arquitetura
+
+```
+┌─────────────┐     ┌──────────────┐     ┌─────────────┐
+│   React     │────▶│    Django    │────▶│ PostgreSQL  │
+│  Frontend   │     │   Backend    │     │  Database   │
+└─────────────┘     └──────────────┘     └─────────────┘
+                           │
+                           ▼
+                    ┌──────────────┐
+                    │    Celery    │
+                    │   + Redis    │
+                    └──────────────┘
+                           │
+                           ▼
+                    ┌──────────────┐
+                    │  Node.js     │
+                    │ PDF Generator│
+                    └──────────────┘
 ```
 
 ---
 
-## 📄 Licença
+## 📦 Servicios / Serviços
 
-Este projeto é privado. Todos os direitos reservados.
+| Servicio/Serviço | Puerto/Porta | Descripción/Descrição |
+|------------------|--------------|----------------------|
+| Frontend (React) | 4102 | Interfaz web / Interface web |
+| Backend (Django) | 4101 | API REST |
+| PDF Generator | 4103 | Generador PDF / Gerador PDF |
+| PostgreSQL | 5436 | Base de datos / Banco de dados |
+| Redis | 6381 | Cola de tareas / Fila de tarefas |
+
+---
+
+## ✨ Funcionalidades / Funcionalidades
+
+- ✅ Lectura automática de emails / Leitura automática de e-mails
+- ✅ Procesamiento XML Factura Electrónica / Processamento XML Nota Fiscal
+- ✅ Gestión multi-empresa / Gestão multi-empresas
+- ✅ Generación de PDFs / Geração de PDFs
+- ✅ Exportación a Excel / Exportação para Excel
+- ✅ Filtros avanzados / Filtros avançados
+- ✅ Tareas programadas (Celery Beat) / Tarefas agendadas (Celery Beat)
+
+---
+
+## 🛠️ Comandos Básicos / Comandos Básicos
+
+```bash
+# Ver logs / Ver logs
+docker-compose logs -f
+
+# Reiniciar servicios / Reiniciar serviços
+docker-compose restart
+
+# Detener todo / Parar tudo
+docker-compose down
+
+# Backup DB
+docker exec leitor-email-db pg_dump -U postgres leitor_email_db > backup.sql
+```
+
+---
+
+## 📞 Soporte / Suporte
+
+- 📧 Email: soporte@amiria.com.py
+- 📚 Docs: Ver README completo en tu idioma / Veja o README completo no seu idioma
+
+---
+
+## 📄 Licencia / Licença
+
+Proyecto privado - Todos los derechos reservados © 2025
+
+Projeto privado - Todos os direitos reservados © 2025
+
+**BOX Mayorista**
